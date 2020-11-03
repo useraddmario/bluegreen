@@ -7,51 +7,46 @@ Parameters:
     Description: An environment name that will be prefixed to resource names
     Type: String
   
-  UbuntuImageId:
-    Description: Region specific Ubuntu 20 image
-    Type: String
-    Default: ami-06e54d05255faf8f6
-
 Resources:
 
-  WebSecGroup:
-    Type: AWS::EC2::SecurityGroup
+  BlueGreenS3Bucket:
+    Type: AWS::S3::Bucket
     Properties:
-      GroupDescription: Allow ssh/http to webserver
-      VpcId:
-        Fn::ImportValue:
-          !Sub "${EnvironmentName}-VPCID"
-      SecurityGroupIngress:
-      - IpProtocol: tcp 
-        FromPort: 22
-        ToPort: 22
-        CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp 
-        FromPort: 80
-        ToPort: 80
-        CidrIp: 0.0.0.0/0
-      SecurityGroupEgress:
-      - IpProtocol: tcp 
-        FromPort: 0
-        ToPort: 65535
-        CidrIp: 0.0.0.0/0
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+    DeletionPolicy: Retain
 
-  EC2Instance:
-    Type: AWS::EC2::Instance
+  BlueGreenBucketPolicy:
+    Type: AWS::S3::BucketPolicy
     Properties:
-        ImageId: 
-          Ref: UbuntuImageId
-        KeyName: that-one
-        SubnetId: 
-          Fn::ImportValue:
-            !Sub "${EnvironmentName}-PUB-SN"
-        InstanceType: t2.nano
-        SecurityGroupIds:
-        - !GetAtt WebSecGroup.GroupId
-        BlockDeviceMappings:
-        - DeviceName: "/dev/sdk"
-          Ebs:
-            VolumeSize: 10
-        Tags:
-          - Key: Name
-            Value: AnsibleTesting
+      PolicyDocument:
+        Id: PublicS3BlueGreenBucketPolicy
+        Version: 2012-10-17
+        Statement:
+          - Sid: PublicReadForGetBucketObjects
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Join 
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref BlueGreenS3Bucket
+                - /*
+      Bucket: !Ref BlueGreenS3Bucket
+
+Outputs:
+  WebsiteURL:
+    Value: !GetAtt 
+      - BlueGreenS3Bucket
+      - WebsiteURL
+    Description: URL for website hosted on S3
+  S3BucketSecureURL:
+    Value: !Join 
+      - ''
+      - - 'https://'
+        - !GetAtt 
+          - BlueGreenS3Bucket
+          - DomainName
+    Description: Name of S3 bucket to hold website content
