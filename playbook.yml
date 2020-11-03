@@ -1,0 +1,6 @@
+---
+- name: Simple apache install with index.html
+  hosts: ec2
+
+  roles:
+   - apache
