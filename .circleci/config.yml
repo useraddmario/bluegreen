@@ -3,12 +3,47 @@ commands:
   dependencies:
     steps:
       - run: yum -y install tar less gzip #needed to attach_workspace
+
+workflows:
+  blue_green_workflow:
+  jobs:
+    - create_and_deploy_front_end:
+        context: aws
+    - promote_to_production
+        requires: [create_and_deploy_front_end]
+
 workflows:
   deploy_workflow:
     jobs:
       - create_and_deploy_front_end:
           context: aws
+
 jobs:
+  version: 2.1
+  create_and_deploy_front_end:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run: |
+          aws cloudformation deploy \
+            --template-file bucket.yml \
+            --stack-name "${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}" \
+            --parameter-overrides NAME="${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}"
+      - run: aws s3 sync . s3://"${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}" --delete
+
+  promote_to_production:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run: |
+          aws cloudformation deploy \
+            --template-file cloudformation.yml \
+            --stack-name cloudfront \
+            --parameter-overrides PipelineID="${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}"
+
+
   create_and_deploy_front_end:
     docker:
       - image: amazon/aws-cli
@@ -17,7 +52,9 @@ jobs:
       - run:
           name: "Create S3 bucket"
           command:
-            aws cloudformation deploy --template-file bucket.yml --stack-name "${CIRCLE_WORKFLOW_ID:0:7}" --parameter-overrides PipelineID="${CIRCLE_WORKFLOW_ID:0:7}"
+            aws cloudformation deploy --template-file bucket.yml --stack-name "${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}" --parameter-overrides PipelineID="${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}"
+      - run: aws s3 sync . s3://"${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}" --delete
+
   get_last_deployment_id:
     docker:
       - image: amazon/aws-cli
@@ -35,6 +72,7 @@ jobs:
           root: /home/circleci
           paths:
             - project
+
   promote_to_production:
     docker:
       - image: amazon/aws-cli
@@ -47,7 +85,8 @@ jobs:
           command: |
             aws cloudformation deploy --template-file cloudfront.yml \
             --stack-name production-distro \
-            --parameter-overrides PipelineID="${CIRCLE_WORKFLOW_ID}"
+            --parameter-overrides PipelineID="${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}"
+
   clean_up_old_front_end:
     docker:
       - image: amazon/aws-cli
@@ -59,7 +98,7 @@ jobs:
           name: "Production distro"
           command: |
             PreviousPipelineID=$(cat /home/circleci/last_deploy_id)
-            aws s3 rm "s3://${OldPipelineID}" --recursive
+            aws s3 rm "s3://${PreviousPipelineID}" --recursive
             aws cloudformation delete-stack --stack-name "${PreviousPipelineID}"
             
 
