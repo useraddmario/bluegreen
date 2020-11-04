@@ -31,11 +31,11 @@ jobs:
       - run:
           name: "Deploy S3 Bucket and latest prod version"
           command: |
-          cd /root/project
-          aws cloudformation deploy \
-          --template-file bucket.yml \
-          --stack-name "${CIRCLE_WORKFLOW_ID:1:8}" \
-          --parameter-overrides NAME="${CIRCLE_WORKFLOW_ID:1:8}"
+            cd /root/project
+            aws cloudformation deploy \
+            --template-file bucket.yml \
+            --stack-name "${CIRCLE_WORKFLOW_ID:1:8}" \
+            --parameter-overrides NAME="${CIRCLE_WORKFLOW_ID:1:8}"
       - run: aws s3 sync index.html s3://"${CIRCLE_WORKFLOW_ID:1:8}" --delete
 
   get_last_deployment_id:
