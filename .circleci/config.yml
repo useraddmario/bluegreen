@@ -16,11 +16,11 @@ workflows:
     jobs:
       - test_variables:
           context: aws
-          #- create_and_deploy_front_end:
-          #context: aws
-          #- promote_to_production:
-          #requires: 
-          #  - create_and_deploy_front_end
+      - create_and_deploy_front_end:
+          context: aws
+      - promote_to_production:
+          requires: 
+            - create_and_deploy_front_end
 
 jobs:
   test_variables:
@@ -37,18 +37,20 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
+      - unique_name
       - run: |
           aws cloudformation deploy \
           --template-file bucket.yml \
-          --stack-name $CIRCLE_PROJECT_REPONAME$CIRCLE_WORKFLOW_ID \
-          --parameter-overrides NAME=$CIRCLE_PROJECT_REPONAME$CIRCLE_WORKFLOW_ID
-      - run: aws s3 sync . s3://$CIRCLE_PROJECT_REPONAME$CIRCLE_WORKFLOW_ID --delete
+          --stack-name $UNIQUE_NAME \
+          --parameter-overrides NAME=$UNIQUE_NAME
+      - run: aws s3 sync . s3://$UNIQUE_NAME --delete
 
   get_last_deployment_id:
     docker:
       - image: amazon/aws-cli
     steps:
       - checkout
+      - unique_name
       - dependencies
       - run:
           name: "Query for last deployment id"
@@ -67,6 +69,7 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - dependencies
+      - unique_name
       - attach_workspace:
           at: /home/circleci
       - run:
@@ -74,12 +77,13 @@ jobs:
           command: |
             aws cloudformation deploy --template-file cloudfront.yml \
             --stack-name production-distro \
-            --parameter-overrides PipelineID="$CIRCLE_PROJECT_REPONAME$CIRCLE_WORKFLOW_ID"
+            --parameter-overrides PipelineID="$UNIQUE_NAME"
 
   clean_up_old_front_end:
     docker:
       - image: amazon/aws-cli
     steps:
+      - unique_name
       - dependencies
       - attach_workspace:
           at: /home/circleci
