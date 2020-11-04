@@ -28,7 +28,9 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
-      - run: |
+      - run:
+          name: "Deploy S3 Bucket and latest prod version"
+          command: |
           cd /root/project
           aws cloudformation deploy \
           --template-file bucket.yml \
@@ -45,7 +47,7 @@ jobs:
       - run:
           name: "Query for last deployment id"
           command: |
-            cd /home/circleci/project
+            cd /root/project
             aws cloudformation list-exports \
             --query "Exports[?Name==\`PipelineID\`].Value" \
             --no-paginate --output text >> last_deploy_id
@@ -65,6 +67,7 @@ jobs:
       - run:
           name: "Production distro"
           command: |
+            cd /root/project
             aws cloudformation deploy --template-file cloudfront.yml \
             --stack-name production-distro \
             --parameter-overrides PipelineID="${CIRCLE_WORKFLOW_ID}"
@@ -74,12 +77,12 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - dependencies
+      - checkout
       - attach_workspace:
-          at: /home/circleci
+          at: /root/project
       - run:
           name: "Production distro"
           command: |
-            PreviousPipelineID=$(cat /home/circleci/last_deploy_id)
+            PreviousPipelineID=$(cat /root/project/last_deploy_id)
             aws s3 rm "s3://${PreviousPipelineID}" --recursive
             aws cloudformation delete-stack --stack-name "${PreviousPipelineID}"
-            
