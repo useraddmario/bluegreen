@@ -4,44 +4,43 @@ commands:
   dependencies:
     steps:
       - run: yum -y install tar less gzip #needed to attach_workspace
-  unique_name:
-    steps:
-      - run:
-          name: Set Environment Variable 
-          command: |
-            echo "UNIQUE_NAME=$CIRCLE_PROJECT_REPONAME$CIRCLE_WORKFLOW_ID" >> $BASH_ENV
 
 workflows:
   blue_green_workflow:
     jobs:
       - create_and_deploy_front_end:
           context: aws
-      - promote_to_production:
-          requires: 
+      - get_last_deployment_id:
+          context: aws
+          requires:
             - create_and_deploy_front_end
-
+      - promote_to_production:
+          context: aws
+          requires: 
+            - get_last_deployment_id
+      - clean_up_old_front_end:
+          context: aws
+          requires:
+            - promote_to_production
 jobs:
   create_and_deploy_front_end:
     docker:
       - image: amazon/aws-cli
     steps:
       - checkout
-      - unique_name
       - run: |
           cd /root/project
-          echo $UNIQUE_NAME
           aws cloudformation deploy \
           --template-file bucket.yml \
-          --stack-name "${UNIQUE_NAME}" \
-          --parameter-overrides NAME="${UNIQUE_NAME}"
-      - run: aws s3 sync . s3://"${UNIQUE_NAME}" --delete
+          ---stack-name "${CIRCLE_WORKFLOW_ID:0:7}" \
+          --parameter-overrides PipelineID="${CIRCLE_WORKFLOW_ID:0:7}"
+      - run: aws s3 sync index.html s3://"${CIRCLE_WORKFLOW_ID:0:7}" --delete
 
   get_last_deployment_id:
     docker:
       - image: amazon/aws-cli
     steps:
       - checkout
-      - unique_name
       - dependencies
       - run:
           name: "Query for last deployment id"
@@ -51,18 +50,18 @@ jobs:
             --query "Exports[?Name==\`PipelineID\`].Value" \
             --no-paginate --output text >> last_deploy_id
       - persist_to_workspace:
-          root: /home/circleci
+          root: /root/project
           paths:
-            - project
+            - last_deploy_id
 
   promote_to_production:
     docker:
       - image: amazon/aws-cli
     steps:
+      - checkout
       - dependencies
-      - unique_name
       - attach_workspace:
-          at: /home/circleci
+          at: /root/project
       - run:
           name: "Production distro"
           command: |
@@ -85,8 +84,3 @@ jobs:
             aws s3 rm "s3://${PreviousPipelineID}" --recursive
             aws cloudformation delete-stack --stack-name "${PreviousPipelineID}"
             
-
-
-
-
-
