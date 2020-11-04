@@ -41,7 +41,7 @@ jobs:
           command: |
             cd /root/project
             ls -lah
-            aws s3 sync /root/project/index.html s3://"bluegreen-${CIRCLE_WORKFLOW_ID:0:7}" --delete
+            aws s3 cp /root/project/index.html s3://"bluegreen-${CIRCLE_WORKFLOW_ID:0:7}" --delete
 
   get_last_deployment_id:
     docker:
