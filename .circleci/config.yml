@@ -73,7 +73,6 @@ jobs:
     docker:
       - image: amazon/aws-cli
     steps:
-      - unique_name
       - dependencies
       - attach_workspace:
           at: /home/circleci
