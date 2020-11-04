@@ -4,17 +4,34 @@ commands:
   dependencies:
     steps:
       - run: yum -y install tar less gzip #needed to attach_workspace
+  unique_name:
+    steps:
+      - run:
+          name: Set Environment Variable 
+          command: |
+            echo "UNIQUE_NAME=$CIRCLE_PROJECT_REPONAME$CIRCLE_WORKFLOW_ID" >> $BASH_ENV
 
 workflows:
   blue_green_workflow:
     jobs:
-      - create_and_deploy_front_end:
+      - test_variables:
           context: aws
+          #- create_and_deploy_front_end:
+          #context: aws
           #- promote_to_production:
           #requires: 
           #  - create_and_deploy_front_end
 
 jobs:
+  test_variables:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - unique_name
+      - run:
+          name: "Test var expansion"
+          command: |
+            echo $UNIQUE_NAME
   create_and_deploy_front_end:
     docker:
       - image: amazon/aws-cli
