@@ -40,7 +40,8 @@ jobs:
           name: "Sync latest code to S3 bucket"
           command: |
             cd /root/project
-            aws s3 sync index.html s3://"bluegreen-${CIRCLE_WORKFLOW_ID:0:7}" --delete
+            ls -lah
+            aws s3 sync /root/project/index.html s3://"bluegreen-${CIRCLE_WORKFLOW_ID:0:7}" --delete
 
   get_last_deployment_id:
     docker:
