@@ -1,4 +1,5 @@
 version: 2.1
+
 commands:
   dependencies:
     steps:
@@ -12,12 +13,6 @@ workflows:
     - promote_to_production:
         requires: create_and_deploy_front_end
 
-workflows:
-  deploy_workflow:
-    jobs:
-      - create_and_deploy_front_end:
-          context: aws
-
 jobs:
   version: 2.1
   create_and_deploy_front_end:
@@ -30,29 +25,6 @@ jobs:
             --template-file bucket.yml \
             --stack-name "${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}" \
             --parameter-overrides NAME="${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}"
-      - run: aws s3 sync . s3://"${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}" --delete
-
-  promote_to_production:
-    docker:
-      - image: amazon/aws-cli
-    steps:
-      - checkout
-      - run: |
-          aws cloudformation deploy \
-            --template-file cloudformation.yml \
-            --stack-name cloudfront \
-            --parameter-overrides PipelineID="${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}"
-
-
-  create_and_deploy_front_end:
-    docker:
-      - image: amazon/aws-cli
-    steps:
-      - checkout
-      - run:
-          name: "Create S3 bucket"
-          command:
-            aws cloudformation deploy --template-file bucket.yml --stack-name "${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}" --parameter-overrides PipelineID="${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}"
       - run: aws s3 sync . s3://"${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}" --delete
 
   get_last_deployment_id:
