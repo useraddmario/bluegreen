@@ -14,8 +14,6 @@ commands:
 workflows:
   blue_green_workflow:
     jobs:
-      - test_variables:
-          context: aws
       - create_and_deploy_front_end:
           context: aws
       - promote_to_production:
@@ -23,15 +21,6 @@ workflows:
             - create_and_deploy_front_end
 
 jobs:
-  test_variables:
-    docker:
-      - image: amazon/aws-cli
-    steps:
-      - unique_name
-      - run:
-          name: "Test var expansion"
-          command: |
-            echo $UNIQUE_NAME
   create_and_deploy_front_end:
     docker:
       - image: amazon/aws-cli
@@ -39,7 +28,6 @@ jobs:
       - checkout
       - unique_name
       - run: |
-          echo $UNIQUE_NAME
           aws cloudformation deploy \
           --template-file bucket.yml \
           --stack-name ${UNIQUE_NAME} \
