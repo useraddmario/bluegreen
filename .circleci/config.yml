@@ -19,7 +19,6 @@ jobs:
     docker:
       - image: amazon/aws-cli
     steps:
-      echo
       - checkout
       - run: |
           aws cloudformation deploy \
