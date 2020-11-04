@@ -32,7 +32,7 @@ jobs:
           cd /root/project
           aws cloudformation deploy \
           --template-file bucket.yml \
-          ---stack-name "${CIRCLE_WORKFLOW_ID:0:7}" \
+          --stack-name "${CIRCLE_WORKFLOW_ID:0:7}" \
           --parameter-overrides PipelineID="${CIRCLE_WORKFLOW_ID:0:7}"
       - run: aws s3 sync index.html s3://"${CIRCLE_WORKFLOW_ID:0:7}" --delete
 
