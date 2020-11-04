@@ -1,11 +1,11 @@
 Parameters:
-NAME:
+DynamicBucketName:
   Type: String
 Resources:
 WebsiteBucket:
   Type: AWS::S3::Bucket
   Properties:
-    BucketName: !Sub "bluegreen-${NAME}"
+    BucketName: !Sub "${DynamicBucketName}"
     AccessControl: PublicRead
     WebsiteConfiguration:
       IndexDocument: index.html
