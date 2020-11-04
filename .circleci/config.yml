@@ -7,11 +7,11 @@ commands:
 
 workflows:
   blue_green_workflow:
-  jobs:
-    - create_and_deploy_front_end:
-        context: aws
-    - promote_to_production:
-        requires: create_and_deploy_front_end
+    jobs:
+      - create_and_deploy_front_end:
+          context: aws
+      - promote_to_production:
+          requires: create_and_deploy_front_end
 
 jobs:
   create_and_deploy_front_end:
