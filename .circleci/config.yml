@@ -23,7 +23,7 @@ jobs:
       - run: |
           aws cloudformation deploy \
             --template-file bucket.yml \
-            --stack-name "${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}" \
+            --stack-name ${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID} \
             --parameter-overrides NAME="${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}"
       - run: aws s3 sync . s3://"${CIRCLE_PROJECT_REPONAME}${CIRCLE_WORKFLOW_ID}" --delete
 
