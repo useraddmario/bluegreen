@@ -39,6 +39,7 @@ jobs:
       - checkout
       - unique_name
       - run: |
+          echo $UNIQUE_NAME
           aws cloudformation deploy \
           --template-file bucket.yml \
           --stack-name ${UNIQUE_NAME} \
