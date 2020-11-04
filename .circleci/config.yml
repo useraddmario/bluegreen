@@ -4,7 +4,12 @@ commands:
   dependencies:
     steps:
       - run: yum -y install tar less gzip #needed to attach_workspace
-
+  unique_name:
+    steps:
+      - run:
+          name: Set Environment Variable 
+          command: |
+            echo "UNIQUE_NAME=$CIRCLE_PROJECT_REPONAME$CIRCLE_WORKFLOW_ID" >> $BASH_ENV
 workflows:
   blue_green_workflow:
     jobs:
@@ -28,15 +33,17 @@ jobs:
       - image: amazon/aws-cli
     steps:
       - checkout
+      - unique_name
       - run:
           name: "Deploy S3 Bucket and latest prod version"
           command: |
             cd /root/project
+            echo $UNIQUE_NAME
             aws cloudformation deploy \
             --template-file bucket.yml \
-            --stack-name "${CIRCLE_WORKFLOW_ID:0:7}" \
-            --parameter-overrides NAME="${CIRCLE_WORKFLOW_ID:0:7}"
-      - run: aws s3 sync index.html s3://"${CIRCLE_WORKFLOW_ID:0:7}" --delete
+            --stack-name "$UNIQUE_NAME" \
+            --parameter-overrides NAME="$UNIQUE_NAME"
+      - run: aws s3 sync index.html s3://"$UNIQUE_NAME" --delete
 
   get_last_deployment_id:
     docker:
