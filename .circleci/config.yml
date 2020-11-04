@@ -30,9 +30,9 @@ jobs:
       - run: |
           aws cloudformation deploy \
           --template-file bucket.yml \
-          --stack-name ${UNIQUE_NAME} \
-          --parameter-overrides NAME=${UNIQUE_NAME}
-      - run: aws s3 sync . s3://${UNIQUE_NAME} --delete
+          --stack-name "${UNIQUE_NAME}" \
+          --parameter-overrides NAME="${UNIQUE_NAME}"
+      - run: aws s3 sync . s3://"${UNIQUE_NAME}" --delete
 
   get_last_deployment_id:
     docker:
@@ -66,7 +66,7 @@ jobs:
           command: |
             aws cloudformation deploy --template-file cloudfront.yml \
             --stack-name production-distro \
-            --parameter-overrides PipelineID="${UNIQUE_NAME}"
+            --parameter-overrides PipelineID=""${UNIQUE_NAME}""
 
   clean_up_old_front_end:
     docker:
